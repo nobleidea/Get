@@ -188,6 +188,16 @@ final class DataLoader: NSObject, URLSessionDataDelegate, URLSessionDownloadDele
         completionHandler(.continueLoading, nil)
 #endif
     }
+	
+	func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+#if os(Linux)
+		handlers[task]?.delegate?.urlSession(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend) ??
+		userTaskDelegate?.urlSession(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend)
+#else
+		handlers[task]?.delegate?.urlSession?(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend) ??
+		userTaskDelegate?.urlSession?(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend)
+#endif
+	}
 
     // MARK: - URLSessionDataDelegate
 
@@ -248,7 +258,7 @@ final class DataLoader: NSObject, URLSessionDataDelegate, URLSessionDownloadDele
         let handler = (handlers[downloadTask] as? DownloadTaskHandler)
         let downloadsURL = DataLoader.downloadDirectoryURL
         try? FileManager.default.createDirectory(at: downloadsURL, withIntermediateDirectories: true, attributes: nil)
-        let newLocation = downloadsURL.appendingPathExtension(location.lastPathComponent)
+        let newLocation = downloadsURL.appendingPathComponent(location.lastPathComponent)
         try? FileManager.default.moveItem(at: location, to: newLocation)
         handler?.location = newLocation
         handler?.downloadDelegate?.urlSession(session, downloadTask: downloadTask, didFinishDownloadingTo: newLocation)
